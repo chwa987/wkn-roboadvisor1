@@ -1,0 +1,301 @@
+Name,Ticker
+D-Wave Quantum,QBTS
+Couchbase,BASE
+Caseys General Stores,CASY
+Royal Gold,RGLD
+Blue Bird,BLBD
+Flowserve,FLS
+Ecolab,ECL
+Solventum Corp,SOLV
+ScanSource,SCSC
+NextEra Energy,NEE
+Pfizer,PFE
+FS Investment,FSK
+Insight Enterprises,NSIT
+Bloom Energy A,BE
+Interactive Brokers,IBKR
+Vital Farms,VITL
+Cleanspark,CLSK
+AmerisourceBergen,COR
+CME Group,CME
+Archrock,AROC
+Encana,OVV
+Mettler-Toledo,MTD
+Hologic,HOLX
+Intuitive Surgical,ISRG
+Diamondback Energy,FANG
+Lululemon Athletica,LULU
+MP Materials,MP
+Sanmina Corporation,SANM
+Ocular Therapeutix,OCUL
+Globe Life,GL
+Lamb Weston,LW
+Wingstop,WING
+Pure Cycle Corporation,PCYO
+HealthStream,HSTM
+CSX Corp,CSX
+Advanced Drainage Systems,WMS
+Vertex Pharmaceuticals,VRTX
+Texas Roadhouse,TXRH
+Euronet Worldwide,EEFT
+MarketAxess Holdings,MKTX
+Lincoln Electric,LECO
+Fox Factory Holding,FOXF
+STERIS,STE
+General Electric,GE
+Keurig Dr Pepper,KDP
+Qualys,QLYS
+Casey's General Stores,CASY
+Target Corporation,TGT
+Modine Manufacturing,MOD
+Goosehead Insurance,GSHD
+SkyWest,SKYW
+Generac Holdings,GNRC
+Cardinal Health,CAH
+Casey's General Stores,CASY
+Abbott Laboratories,ABT
+Atkore,ATKR
+EPAM Systems,EPAM
+S&P Global,SPGI
+Thermo Fisher Scientific,TMO
+Insulet Corporation,PODD
+Apple,AAPL
+Amazon,AMZN
+Alphabet Class A,GOOGL
+Alphabet Class C,GOOG
+Meta Platforms,META
+Microsoft,MSFT
+Nvidia,NVDA
+Broadcom,AVGO
+Netflix,NFLX
+Adobe,ADBE
+Salesforce,CRM
+Intuit,INTU
+ServiceNow,NOW
+ASML Holding,ASML
+Taiwan Semiconductor,TSM
+Applied Materials,AMAT
+Lam Research,LRCX
+KLA Corporation,KLAC
+Texas Instruments,TXN
+Qualcomm,QCOM
+Advanced Micro Devices,AMD
+Marvell Technology,MRVL
+Micron Technology,MU
+ON Semiconductor,ON
+Cadence Design Systems,CDNS
+Synopsys,SNPS
+Palo Alto Networks,PANW
+CrowdStrike,CRWD
+Fortinet,FTNT
+Zscaler,ZS
+Workday,WDAY
+Paycom Software,PAYC
+HubSpot,HUBS
+Datadog,DDOG
+Snowflake,SNOW
+MongoDB,MDB
+Elastic N.V.,ESTC
+Atlassian,TEAM
+Smartsheet,SMAR
+Zoom Video,ZM
+DocuSign,DOCU
+Dropbox,DBX
+Box Inc.,BOX
+Twilio,TWLO
+RingCentral,RNG
+Okta,OKTA
+Cloudflare,NET
+Fastly,FSLY
+Shopify,SHOP
+Block Inc.,SQ
+Toast Inc.,TOST
+PayPal,PYPL
+Adyen,ADYEY
+Sea Limited,SE
+MercadoLibre,MELI
+Alibaba,BABA
+JD.com,JD
+Pinduoduo,PDD
+Baidu,BIDU
+Tencent Music,TME
+Unity Software,U
+Roblox,RBLX
+Take-Two Interactive,TTWO
+Electronic Arts,EA
+Activision Blizzard,ATVI
+Zynga,ZNGA
+Nintendo ADR,NTDOY
+Sony ADR,SONY
+Tencent ADR,TCEHY
+Netease ADR,NTES
+DraftKings,DKNG
+Skillz,SKLZ
+fuboTV,FUBO
+Roku,ROKU
+Vimeo,VMEO
+Pinterest,PINS
+Snap,SNAP
+Meta Platforms,META
+Alphabet Inc. A,GOOGL
+Bumble,BMBL
+Match Group,MTCH
+Tripadvisor,TRIP
+Expedia,EXPE
+Airbnb,ABNB
+Booking Holdings,BKNG
+Uber,UBER
+Lyft,LYFT
+DoorDash,DASH
+Grubhub,GRUB
+Instacart (Maplebear),CART
+Tesla,TSLA
+Lucid Group,LCID
+Rivian Automotive,RIVN
+Fisker,FSR
+NIO,NIO
+Li Auto,LI
+XPeng,XPEV
+Nikola,NKLA
+Lordstown Motors,RIDEQ
+Canoo,GOEV
+Faraday Future,FFIE
+Polestar Automotive,PSNY
+VinFast Auto,VFS
+General Motors,GM
+Ford Motor,F
+Stellantis,STLA
+Toyota ADR,TM
+Honda ADR,HMC
+BYD ADR,BYDDY
+Hyundai ADR,HYMTF
+Mercedes-Benz ADR,MBGYY
+Volkswagen ADR,VWAGY
+BMW ADR,BMWYY
+Volvo ADR,VLVLY
+Renault ADR,RNLSY
+Aptiv,APTV
+Magna International,MGA
+Mobileye,MBLY
+Luminar Technologies,LAZR
+Innoviz Technologies,INVZ
+Chevron,CVX
+ExxonMobil,XOM
+ConocoPhillips,COP
+Occidental Petroleum,OXY
+Devon Energy,DVN
+EOG Resources,EOG
+Marathon Oil,MRO
+Hess Corporation,HES
+APA Corporation,APA
+Pioneer Natural Resources,PXD
+Chesapeake Energy,CHK
+Diamondback Energy,FANG
+Coterra Energy,CTRA
+Antero Resources,AR
+SM Energy,SM
+Matador Resources,MTDR
+Comstock Resources,CRK
+Permian Resources,PR
+Callon Petroleum,CPE
+Range Resources,RRC
+Gulfport Energy,GPOR
+Southwestern Energy,SWN
+Murphy Oil,MUR
+Ovintiv,OVV
+Magnolia Oil & Gas,MGY
+Kosmos Energy,KOS
+Talos Energy,TALO
+SilverBow Resources,SBOW
+CNX Resources,CNX
+PEDEVCO,PED
+First Solar,FSLR
+Enphase Energy,ENPH
+SolarEdge Technologies,SEDG
+SunPower,SPWR
+Sunnova Energy,NOVA
+Sunrun,RUN
+Shoals Technologies,SHLS
+Array Technologies,ARRY
+Canadian Solar,CSIQ
+JinkoSolar,JKS
+ReneSola,SOL
+Maxeon Solar,MAXN
+Brookfield Renewable,BEP
+Atlantica Sustainable Infrastructure,AY
+Ormat Technologies,ORA
+NextEra Energy Partners,NEP
+Clearway Energy,CWEN
+Plug Power,PLUG
+Ballard Power,BLDP
+Bloom Energy,BE
+FuelCell Energy,FCEL
+Nikola Corporation,NKLA
+Hyliion Holdings,HYLN
+QuantumScape,QS
+Solid Power,SLDP
+Freyr Battery,FREY
+Romeo Power,RMO
+Microvast,MVST
+Proterra,PTRA
+Lightning eMotors,ZEV
+Cameco,CCJ
+Uranium Energy,UEC
+Denison Mines,DNN
+NexGen Energy,NXE
+Energy Fuels,UUUU
+Paladin Energy,PALAF
+Fission Uranium,FCUUF
+BHP Group,BHP
+Rio Tinto,RIO
+Vale S.A.,VALE
+Southern Copper,SCCO
+Freeport-McMoRan,FCX
+Teck Resources,TECK
+Anglo American,NGLOY
+Albemarle,ALB
+Livent Corporation,LTHM
+Piedmont Lithium,PLL
+Lithium Americas,LAC
+Sigma Lithium,SGML
+Standard Lithium,SLI
+American Battery Technology,ABAT
+Compass Minerals,CMP
+MP Materials,MP
+Arcadium Lithium,ALTM
+Sociedad Química y Minera,SQM
+TMC the metals company,TMC
+Century Lithium,CYDVF
+Global X Uranium ETF,URA
+Global X Lithium & Battery Tech ETF,LIT
+Sprott Uranium Miners ETF,URNM
+American Water Works,AWK
+Essential Utilities,WTRG
+Xylem,XYL
+Pentair,PNR
+A. O. Smith,AOS
+IDEX Corporation,IEX
+Roper Technologies,ROP
+Fortive Corporation,FTV
+Danaher Corporation,DHR
+Thermo Fisher Scientific,TMO
+Agilent Technologies,A
+PerkinElmer (Revvity),RVTY
+Waters Corporation,WAT
+Illumina,ILMN
+Bruker Corporation,BRKR
+Bio-Rad Laboratories,BIO
+Charles River Laboratories,CRL
+ICON plc,ICLR
+IQVIA Holdings,IQV
+Laboratory Corp of America,LH
+Quest Diagnostics,DGX
+Sartorius Stedim Biotech ADR,SARTF
+Repligen,RGEN
+West Pharmaceutical Services,WST
+Avantor,AVTR
+Catalent,CTLT
+Medpace Holdings,MEDP
+Syneos Health,SYNH
+PPD Inc.,PPD
+Envista Holdings,NVST

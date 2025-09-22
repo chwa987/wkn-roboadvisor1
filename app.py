@@ -1,7 +1,6 @@
 # app.py
 # Momentum-Screener mit Handlungsempfehlungen (Kaufen/Halten/Verkaufen)
-# Robuster OHLCV-Downloader mit Batch-Handling
-# Universum kann sehr groß sein (z. B. 750 Aktien)
+# Relative Stärke jetzt als Prozentrang (0–100)
 
 import streamlit as st
 import pandas as pd
@@ -12,14 +11,10 @@ from datetime import datetime, timedelta
 st.set_page_config(page_title="Momentum-Screener", page_icon="📈", layout="wide")
 
 # ---------------------------------------------------
-# ROBUSTER OHLCV-DOWNLOADER
+# Robuster Downloader
 # ---------------------------------------------------
 @st.cache_data(show_spinner=False, ttl=60*60)
 def fetch_ohlc(ticker_list, start, end, batch_size: int = 150):
-    """
-    Lädt OHLCV-Daten robust in Batches.
-    Gibt (Preise, Volumen) zurück.
-    """
     if isinstance(ticker_list, str):
         tickers = [t.strip() for t in ticker_list.split(",") if t.strip()]
     else:
@@ -90,7 +85,6 @@ def zscore_last(value: float, mean: float, std: float) -> float:
     return (value - mean) / std
 
 def volume_score(vol_series: pd.Series, lookback=60):
-    """Volume-Multiplikator: aktuelles Vol / SMA(lookback). Caps (0.5 – 2.0)."""
     if vol_series is None or vol_series.dropna().empty:
         return np.nan
     cur = vol_series.dropna().iloc[-1]
@@ -121,10 +115,14 @@ def compute_indicators(price_df: pd.DataFrame, volume_df: pd.DataFrame):
         mom260 = pct_change_over_window(s, 260)
         momJT  = pct_change_over_window(s, 90)
 
-        rs_90, rs_z = mom90_series.get(t, np.nan), np.nan
+        # Relative Stärke = Prozentrang im Universum
+        rs_90 = mom90_series.get(t, np.nan)
         if not np.isnan(rs_90):
-            rs_z = zscore_last(rs_90, mu, sigma)
+            rs_percentile = (mom90_series < rs_90).mean() * 100
+        else:
+            rs_percentile = np.nan
 
+        rs_z = zscore_last(rs_90, mu, sigma) if not np.isnan(rs_90) else np.nan
         vol_sc = volume_score(volume_df.get(t, pd.Series(dtype=float)), lookback=60)
 
         def dist(p, m): return (p / m - 1.0) * 100.0 if (not pd.isna(p) and not pd.isna(m) and m != 0) else np.nan
@@ -147,7 +145,7 @@ def compute_indicators(price_df: pd.DataFrame, volume_df: pd.DataFrame):
             "Kurs aktuell": last,
             "MOM260 (%)": mom260,
             "MOMJT (%)":  momJT,
-            "Relative Stärke (%)": rs_90,
+            "Relative Stärke (%)": rs_percentile,  # jetzt als Prozentrang
             "RS z-Score": rs_z,
             "Volumen-Score": vol_sc,
             "Abstand GD50 (%)": d50,

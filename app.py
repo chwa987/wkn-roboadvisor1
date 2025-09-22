@@ -1,119 +1,199 @@
-import streamlit as st
-import pandas as pd
+# app.py
+# Momentum-Screener für 750-Kosmos (Börseverlag) mit Handlungsempfehlungen
+
 import numpy as np
+import pandas as pd
+import streamlit as st
 import yfinance as yf
-from datetime import datetime
+from datetime import datetime, timedelta
 
-st.set_page_config(page_title="Momentum-Screener", layout="wide")
+st.set_page_config(page_title="Momentum-Screener", page_icon="📈", layout="wide")
 
 # ---------------------------- #
-# Daten holen
+#            Utils             #
 # ---------------------------- #
-@st.cache_data
-def fetch_ohlc(tickers, start, end):
+
+@st.cache_data(show_spinner=False, ttl=60*60)
+def fetch_ohlc(ticker_list, start, end):
+    """Holt OHLCV-Daten; fallback auf Close falls Adj Close fehlt."""
+    tickers = [str(t).strip().upper() for t in ticker_list if str(t).strip()]
+    tickers = list(dict.fromkeys(tickers))
+    if not tickers:
+        return pd.DataFrame(), pd.DataFrame()
+
+    try:
+        data = yf.download(
+            tickers=" ".join(tickers),
+            start=start,
+            end=end,
+            group_by="ticker",
+            auto_adjust=False,
+            progress=False,
+            threads=True,
+        )
+    except Exception as e:
+        st.error(f"Fehler beim Download: {e}")
+        return pd.DataFrame(), pd.DataFrame()
+
     close_dict, vol_dict = {}, {}
     for t in tickers:
         try:
-            df = yf.download(t, start=start, end=end, progress=False)
-            if df is None or df.empty:
-                print(f"⚠️ Keine Daten für {t}")
-                continue
-            closes = df["Adj Close"]
-            vols = df["Volume"] if "Volume" in df else pd.Series([0]*len(df), index=df.index)
-            close_dict[t] = closes
-            vol_dict[t] = vols
-        except Exception as e:
-            print(f"Fehler bei {t}: {e}")
-            continue
-    return pd.DataFrame(close_dict), pd.DataFrame(vol_dict)
+            df = data[t].copy() if isinstance(data.columns, pd.MultiIndex) else data.copy()
+        except Exception:
+            df = data.copy()
 
-# ---------------------------- #
-# Kennzahlen berechnen
-# ---------------------------- #
-def compute_indicators(prices, volumes):
+        if df.empty:
+            continue
+        closes = (df["Adj Close"] if "Adj Close" in df.columns else df.get("Close")).rename(t)
+        vols = df.get("Volume", pd.Series(dtype=float)).rename(t)
+        close_dict[t] = closes
+        vol_dict[t] = vols
+
+    price = pd.concat(close_dict.values(), axis=1) if close_dict else pd.DataFrame()
+    volume = pd.concat(vol_dict.values(), axis=1) if vol_dict else pd.DataFrame()
+    price = price.sort_index().dropna(how="all")
+    volume = volume.reindex_like(price)
+    return price, volume
+
+
+def pct_change_over_window(series: pd.Series, days: int) -> float:
+    s = series.dropna()
+    if len(s) < days + 1:
+        return np.nan
+    return (s.iloc[-1] / s.iloc[-(days+1)] - 1.0) * 100.0
+
+
+def safe_sma(series: pd.Series, window: int) -> pd.Series:
+    return series.rolling(window=window, min_periods=max(5, window // 5)).mean()
+
+
+def zscore_last(value: float, mean: float, std: float) -> float:
+    if std == 0 or np.isnan(std):
+        return 0.0
+    return (value - mean) / std
+
+
+def volume_score(vol_series: pd.Series, lookback=60):
+    if vol_series is None or vol_series.dropna().empty:
+        return np.nan
+    cur = vol_series.dropna().iloc[-1]
+    base = vol_series.rolling(lookback, min_periods=max(5, lookback//5)).mean().iloc[-1]
+    if base == 0 or pd.isna(base) or pd.isna(cur):
+        return np.nan
+    return float(np.clip(cur / base, 0.5, 2.0))
+
+
+def compute_indicators(price_df: pd.DataFrame, volume_df: pd.DataFrame):
     results = []
-    for t in prices.columns:
-        p = prices[t].dropna()
-        v = volumes[t].dropna()
-        if p.empty:
+
+    mom90_series = pd.Series({t: pct_change_over_window(price_df[t], 90) for t in price_df.columns})
+    mu, sigma = mom90_series.mean(), mom90_series.std(ddof=0)
+
+    for t in price_df.columns:
+        s = price_df[t].dropna()
+        if s.empty or len(s) < 60:
             continue
 
-        try:
-            mom260 = (p.iloc[-1] / p.iloc[-260] - 1) * 100 if len(p) > 260 else np.nan
-            momjt = ((p.pct_change().rolling(6).mean() * 100).iloc[-1]) if len(p) > 6 else np.nan
-            rs = (p.iloc[-1] / p.mean() - 1) * 100
-            vol_score = (v[-20:].mean() / v.mean()) if v.mean() > 0 else 1
+        last = s.iloc[-1]
+        sma50 = safe_sma(s, 50).iloc[-1]
+        sma200 = safe_sma(s, 200).iloc[-1]
 
-            gd20 = p.rolling(20).mean().iloc[-1]
-            gd50 = p.rolling(50).mean().iloc[-1]
-            gd200 = p.rolling(200).mean().iloc[-1]
-            last = p.iloc[-1]
+        mom260 = pct_change_over_window(s, 260)
+        momJT  = pct_change_over_window(s, 90)
+        rs_90  = mom90_series.get(t, np.nan)
+        rs_z   = zscore_last(rs_90, mu, sigma) if not np.isnan(rs_90) else np.nan
+        vol_sc = volume_score(volume_df.get(t, pd.Series(dtype=float)), lookback=60)
 
-            gd20_signal = "über GD20" if last > gd20 else "unter GD20"
-            gd50_signal = "über GD50" if last > gd50 else "unter GD50"
-            gd200_signal = "über GD200" if last > gd200 else "unter GD200"
+        def dist(p, m):
+            if pd.isna(p) or pd.isna(m) or m == 0:
+                return np.nan
+            return (p / m - 1.0) * 100.0
 
-            # Momentum-Score mit Gewichtung
-            score = (
-                0.3 * (mom260 if not np.isnan(mom260) else 0) +
-                0.3 * (momjt if not np.isnan(momjt) else 0) +
-                0.2 * (rs if not np.isnan(rs) else 0) +
-                0.2 * (vol_score if not np.isnan(vol_score) else 0)
-            )
+        d50, d200 = dist(last, sma50), dist(last, sma200)
+        sig50  = "Über GD50"  if last >= sma50 else "Unter GD50"
+        sig200 = "Über GD200" if last >= sma200 else "Unter GD200"
 
-            # Exit-Logik: unter GD50 = Halten/Verkaufen
-            if last < gd50:
-                status = "Verkaufen"
-            elif last < gd200:
-                status = "Halten"
-            else:
-                status = "Kaufen"
+        def logp(x):
+            if pd.isna(x):
+                return np.nan
+            return np.sign(x) * np.log1p(abs(x))
 
-            results.append({
-                "Ticker": t,
-                "Kurs aktuell": round(last, 2),
-                "MOM260 (%)": round(mom260, 2) if not np.isnan(mom260) else np.nan,
-                "MOMJT (%)": round(momjt, 2) if not np.isnan(momjt) else np.nan,
-                "Relative Stärke (%)": round(rs, 2),
-                "Volumen-Score": round(vol_score, 2),
-                "Abstand GD20 (%)": round((last / gd20 - 1) * 100, 2) if gd20 > 0 else np.nan,
-                "GD20-Signal": gd20_signal,
-                "Abstand GD50 (%)": round((last / gd50 - 1) * 100, 2) if gd50 > 0 else np.nan,
-                "GD50-Signal": gd50_signal,
-                "Abstand GD200 (%)": round((last / gd200 - 1) * 100, 2) if gd200 > 0 else np.nan,
-                "GD200-Signal": gd200_signal,
-                "Momentum-Score": round(score, 2),
-                "Handelsempfehlung": status
-            })
-        except Exception as e:
-            print(f"Fehler bei {t}: {e}")
-            continue
+        score = (
+            0.40 * logp(mom260) +
+            0.30 * logp(momJT) +
+            0.20 * (0 if pd.isna(rs_z) else rs_z) +
+            0.10 * (0 if pd.isna(vol_sc) else (vol_sc - 1.0))
+        )
+        score = 0.0 if pd.isna(score) else score
+
+        results.append({
+            "Ticker": t,
+            "Kurs aktuell": last,
+            "MOM260 (%)": mom260,
+            "MOMJT (%)": momJT,
+            "Relative Stärke (%)": rs_90,
+            "RS z-Score": rs_z,
+            "Volumen-Score": vol_sc,
+            "Abstand GD50 (%)": d50,
+            "Abstand GD200 (%)": d200,
+            "GD50-Signal": sig50,
+            "GD200-Signal": sig200,
+            "Momentum-Score": float(score),
+        })
 
     df = pd.DataFrame(results)
-    if not df.empty:
-        df = df.sort_values(by="Momentum-Score", ascending=False).reset_index(drop=True)
+    if df.empty:
+        return df
+    df = df.sort_values("Momentum-Score", ascending=False).reset_index(drop=True)
+    df["Rank"] = np.arange(1, len(df) + 1)
     return df
 
 # ---------------------------- #
-# Streamlit App
+#             UI               #
 # ---------------------------- #
-st.title("📈 Momentum-Screener")
 
-ticker_input = st.text_area("Gib Ticker ein (kommagetrennt):", "AAPL, MSFT, TSLA, NVDA")
-tickers = [t.strip() for t in ticker_input.split(",") if t.strip()]
+st.title("📊 Momentum-Screener für 750-Kosmos")
 
-start_date = st.date_input("Startdatum", datetime(2018,1,1))
-end_date = st.date_input("Enddatum", datetime.today())
+uploaded = st.file_uploader("Lade deine Kosmos-Datei hoch (CSV oder XLSX)", type=["csv", "xlsx"])
+tickers = []
+name_map = {}
 
-if st.button("Analyse starten"):
-    if not tickers:
-        st.warning("Bitte mindestens einen Ticker eingeben.")
+if uploaded is not None:
+    if uploaded.name.endswith(".xlsx"):
+        df_in = pd.read_excel(uploaded)
     else:
-        prices, volumes = fetch_ohlc(tickers, start_date, end_date)
-        if prices.empty:
-            st.error("❌ Keine Kursdaten geladen.")
-        else:
-            df = compute_indicators(prices, volumes)
-            st.subheader("📊 Ergebnisse")
-            st.dataframe(df, use_container_width=True)
-            st.download_button("⬇️ Ergebnisse als CSV exportieren", df.to_csv(index=False), "ergebnisse.csv")
+        df_in = pd.read_csv(uploaded)
+
+    if "Ticker" not in df_in.columns:
+        st.error("❌ Datei braucht eine Spalte 'Ticker'.")
+        st.stop()
+    else:
+        tickers = df_in["Ticker"].astype(str).tolist()
+        if "Name" in df_in.columns:
+            name_map = dict(zip(df_in["Ticker"].astype(str), df_in["Name"].astype(str)))
+        st.success(f"{len(tickers)} Ticker aus Datei geladen.")
+
+if not tickers:
+    st.info("Bitte Kosmos-Datei hochladen.")
+    st.stop()
+
+start_date = st.sidebar.date_input("Startdatum", value=datetime.today() - timedelta(days=900))
+end_date   = st.sidebar.date_input("Enddatum", value=datetime.today())
+
+with st.spinner("Lade Kursdaten …"):
+    prices, volumes = fetch_ohlc(tickers, start_date, end_date)
+
+if prices.empty:
+    st.error("Keine Kursdaten gefunden.")
+    st.stop()
+
+df = compute_indicators(prices, volumes)
+if df.empty:
+    st.warning("Keine Kennzahlen berechnet.")
+    st.stop()
+
+df["Name"] = df["Ticker"].map(name_map).fillna(df["Ticker"])
+st.dataframe(df, use_container_width=True)
+
+csv = df.to_csv(index=False).encode("utf-8")
+st.download_button("📥 Ergebnisse als CSV exportieren", csv, "kosmos_momentum.csv", "text/csv")

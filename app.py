@@ -230,8 +230,13 @@ def run_backtest(price_df: pd.DataFrame,
     for m_i, d in enumerate(months[:-1]):  # bis vorletzter Monat (Rendite zur nächsten Monatsletzten)
         asof = d
         next_asof = months[m_i+1]
-        asof_pos = idx.get_loc(asof)
-        next_pos = idx.get_loc(next_asof)
+        for m_i, d in enumerate(months[:-1]):
+    asof = d
+    next_asof = months[m_i+1]
+
+    # robust: falls Monatsultimo nicht im Index existiert (Wochenende/Feiertag)
+    asof_pos = idx.get_indexer([asof], method="nearest")[0]
+    next_pos = idx.get_indexer([next_asof], method="nearest")[0]
 
         snap = compute_snapshot_indicators(price_df, volume_df, asof_pos)
         if snap.empty:

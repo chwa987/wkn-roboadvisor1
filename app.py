@@ -287,24 +287,67 @@ def run_backtest(price_df: pd.DataFrame,
     return eq, trades
 
 def perf_stats(equity: pd.DataFrame):
-    if equity.empty:
-        return {}
-    eq = equity["Equity"].astype(float)
-    rets = eq.pct_change().dropna()
-    if rets.empty:
-        return {}
-    # Monatsdaten -> annualisiert
-    mean_m = rets.mean()
-    std_m  = rets.std(ddof=0)
-    cagr = (eq.iloc[-1] / eq.iloc[0]) ** (12 / len(rets)) - 1.0 if len(rets) > 0 else 0.0
-    vol_a = std_m * np.sqrt(12)
-    sharpe = (mean_m * 12) / vol_a if vol_a > 0 else np.nan
-    dd = (eq / eq.cummax() - 1.0).min()
-    return {
-        "CAGR": cagr,
-        "Volatilität (ann.)": vol_a,
-        "Sharpe (ann.)": sharpe,
-        "Max Drawdown": dd
+def run_backtest(price_df, volume_df, start_date, end_date, top_n=10, use_gd50_exit=True):
+    """
+    Backtest:
+    - Rebalancing: monatlich (Monatsultimo)
+    - Auswahl: Momentum-Score (wie Analyse)
+    - Gleichgewichtung
+    - Kosten: auf Turnover (Ein-/Ausstiege)
+    """
+    idx = price_df.index
+    months = monthly_endpoints(idx)
+    # Nur Monate berücksichtigen, die auch >= Startdatum und <= Enddatum sind
+    months = [d for d in months if idx[0] <= d <= idx[-1] and d >= pd.to_datetime(start_date) and d <= pd.to_datetime(end_date)]
+
+    equity = []
+    weights_prev = pd.Series(0.0, index=price_df.columns)
+    port_val = 1.0
+    trades_log = []
+
+    for m_i, d in enumerate(months[:-1]):
+        asof = d
+        next_asof = months[m_i+1]
+
+        # robust: falls Monatsultimo nicht im Index existiert (Wochenende/Feiertag)
+        asof_pos = idx.get_indexer([asof], method="nearest")[0]
+        next_pos = idx.get_indexer([next_asof], method="nearest")[0]
+
+        snap = compute_snapshot_indicators(price_df.iloc[:asof_pos+1], volume_df.iloc[:asof_pos+1])
+        if snap.empty:
+            equity.append((asof, port_val))
+            continue
+
+        # Top-N Selektion
+        pool = snap.copy()
+        if use_gd50_exit:
+            pool = pool[pool["GD50-Signal"] == "Über GD50"]
+        sel = pool.head(top_n)
+
+        # Neue Gewichte
+        new_weights = pd.Series(0.0, index=price_df.columns)
+        if not sel.empty:
+            w = 1.0 / len(sel)
+            new_weights.loc[sel["Ticker"]] = w
+
+        # Performance-Berechnung für Periode
+        rets = price_df.iloc[asof_pos+1:next_pos+1].pct_change().fillna(0)
+        port_rets = (rets * weights_prev).sum(axis=1)
+        port_val *= (1.0 + port_rets).prod()
+
+        equity.append((asof, port_val))
+
+        # Turnover loggen
+        turnover = (new_weights - weights_prev).abs().sum() / 2
+        trades_log.append({"Date": asof, "Turnover": turnover})
+
+        # Update Gewichte
+        weights_prev = new_weights.copy()
+
+    eq_df = pd.DataFrame(equity, columns=["Date", "Equity"]).set_index("Date")
+    trades_df = pd.DataFrame(trades_log)
+
+    return eq_df, trades_df
     }
 
 # =========================================================
